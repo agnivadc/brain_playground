@@ -39,7 +39,7 @@ Every stage communicates exclusively via typed return values. No shared state, n
 ## Folder Structure
 
 ```
-context_os/
+~/Documents/context-os/        ← project root
   core/
     __init__.py
     plan.py
@@ -56,6 +56,7 @@ context_os/
     pi_agent.py
     generic_agent.py
   cli.py
+  docs/
 ```
 
 ---
@@ -182,7 +183,7 @@ class AgentConfig:
 ### Concrete adapters
 
 - **`PiAgent`** — `mode="stdin"`, command `["pi"]`
-- **`GenericAgent`** — configurable command, mode, and arg_flag via constructor
+- **`GenericAgent`** — configurable command, mode, and arg_flag via constructor (e.g. `GenericAgent(command=["claude"], mode="stdin")`)
 
 Adding a new agent = one new file, zero changes to core.
 
