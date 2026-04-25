@@ -88,3 +88,58 @@ When an IMMEDIATE-tier moment is detected:
 confidence (new < existing), surface it explicitly:
 *"This would lower confidence from 0.95 → 0.7. Confirm?"* Don't silently
 regress.
+
+## §3 Inline-batch protocol
+
+When a BATCH-tier moment is detected:
+
+1. Compose the draft content as if it were the body of a brain node — one
+   atomic fact, written so the exact string can pass to `brain_write`.
+2. Pick a slug: 3-5 hyphenated lowercase words capturing the topic
+   (e.g. `mes-open-slippage`, `atr-period-comparison`).
+3. Build the filename: `<ISO-timestamp>-<slug>.md`. Timestamp format:
+   `YYYY-MM-DDTHH-MM-SS` (e.g. `2026-04-25T10-04-12-mes-open-slippage.md`).
+   On collision append `-2`, `-3`.
+4. Write the file under `.brain-drafts/`. Create the directory if it
+   doesn't exist.
+5. Mention the draft in **one** line of conversation:
+   *"Drafted to brain buffer: `<slug>`."* Do not ask for approval.
+   Continue the conversation.
+
+### Draft frontmatter spec
+
+Every draft artifact has YAML frontmatter followed by content:
+
+```yaml
+---
+tags: [<lowercase-hyphenated>, ...]
+source_type: human | session | ingestion
+source_ref: <citable-origin-or-session-tag>
+confidence: <0.0-1.0>
+tier: batch
+dedup_check: <true if confidence >= 0.8 else false>
+supersedes: null
+---
+<one atomic fact, plain prose, no headings>
+```
+
+**Field rules:**
+
+- `tags` must follow existing patterns. Query the brain with broad terms
+  before inventing new tags; reuse over invent.
+- `source_type` is `human` if the user told you directly, `session` if
+  derived from this conversation's analysis, `ingestion` if extracted
+  from a doc/source the user shared in chat.
+- `source_ref` is a citable origin string. For session-derived items,
+  use `session:<YYYY-MM-DD>_<topic-slug>`. For user-cited papers/docs,
+  use the format from the seeded nodes (e.g. `Aronson 2007, Ch.6`).
+- `confidence`: 0.95+ for hard rules (but those are immediate-tier, not
+  batch); 0.7-0.85 for empirical findings; 0.5-0.7 for observations and
+  hypotheses.
+- `dedup_check` is set to `true` automatically when `confidence >= 0.8`,
+  which gates the dedup query during sweep.
+- `supersedes` is `null` at draft time. Sweep populates it if a dedup
+  match is chosen.
+
+A working reference artifact lives at `example-draft.md` in this
+directory.
