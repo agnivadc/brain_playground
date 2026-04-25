@@ -143,3 +143,72 @@ supersedes: null
 
 A working reference artifact lives at `example-draft.md` in this
 directory.
+
+## §4 Sweep protocol
+
+Triggered by `/brain-sweep` (primary) or the inferred-trigger prompt
+(see §5). Steps:
+
+1. **List drafts.** Read `.brain-drafts/`. If empty, print
+   *"No drafts to sweep."* and exit.
+2. **Parse each draft.** Read the frontmatter and body. If frontmatter
+   is unparseable, mark the draft `⚠️ unparseable frontmatter` — show
+   it in the table but skip the auto-write step.
+3. **Cross-compare drafts (pre-step).** If two or more drafts share a
+   distinctive keyword (per §2's heuristic), surface the candidate
+   merge before the table renders:
+
+   ```
+   Candidate merge: <slug-1> and <slug-2> both reference "<keyword>".
+   keep both / merge into one / drop <slug>?
+   ```
+
+   Resolve all merge candidates before continuing.
+4. **Render the table.**
+
+   ```
+   N drafts ready:
+     | slug | tags | conf | one-line summary |
+     | ...  | ...  | ...  | ...              |
+   Walk through them?
+   ```
+
+5. **Walk one-at-a-time, in filename order.** For each draft:
+
+   a. If `dedup_check: true` (i.e. `confidence >= 0.8`):
+      - Run `brain_query(<distinctive keyword>)`.
+      - Show top 3 related existing nodes by recency:
+
+        ```
+        Existing related: kn-<id1>, kn-<id2>, kn-<id3>
+        ```
+
+      - Offer: `write new / supersede <id> / skip`.
+   b. If `dedup_check: false`:
+      - Show the artifact content + frontmatter as-is.
+      - Offer: `approve / edit / skip`.
+   c. **On approve / write new:** call `brain_write` with the draft's
+      payload. On success, delete the draft file.
+   d. **On supersede `<id>`:** call `brain_write` with the supersedes
+      field set to `<id>`. Apply the §2 confidence-regression guard.
+      On success, delete the draft file.
+   e. **On edit:** open the conversation to inline edits (user can
+      revise content/tags/confidence). After edits, return to the
+      offer prompt.
+   f. **On skip:** leave the file in place. It will reappear in the
+      next sweep.
+   g. **On reject (explicit):** delete the file without writing.
+
+6. **Final summary.** Print:
+
+   ```
+   N written, M skipped, K rejected, J left as drafts.
+   ```
+
+**Atomicity note.** `brain_write` and the file deletion are sequential.
+If `brain_write` fails (MCP unreachable, etc.), do NOT delete the file;
+report the failure and move to the next draft. No silent loss.
+
+**Resume after crash.** If a sweep is interrupted, drafts already
+written-and-deleted are committed to brain; remaining files are still
+on disk. Re-running `/brain-sweep` resumes naturally.
