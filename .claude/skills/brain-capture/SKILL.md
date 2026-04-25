@@ -212,3 +212,51 @@ report the failure and move to the next draft. No silent loss.
 **Resume after crash.** If a sweep is interrupted, drafts already
 written-and-deleted are committed to brain; remaining files are still
 on disk. Re-running `/brain-sweep` resumes naturally.
+
+## §5 Inferred-trigger heuristic
+
+The sweep can fire automatically as a safety-net prompt, but only when
+ALL of these conditions hold:
+
+1. `.brain-drafts/` is non-empty.
+2. The user's most recent message contains a wrap signal:
+   - Explicit thanks: *"thanks"*, *"great"*, *"perfect"*, *"awesome"*
+   - Explicit close: *"ok done"*, *"good for now"*, *"that's all"*,
+     *"we can stop here"*
+   - Clear topic-change to something unrelated to the current thread
+3. No prior sweep prompt has been issued in this session.
+
+If all three hold, ask exactly once:
+
+> *"Looks like we're wrapping — run brain sweep on N drafts?"*
+
+User responses:
+
+- **yes** → invoke the sweep protocol (§4).
+- **later** → suppress further inferred prompts for the rest of the
+  session. The user can still trigger the sweep explicitly with
+  `/brain-sweep`.
+- **no** → same as `later`.
+
+One inferred prompt per session, max. Never nag.
+
+## §6 Don't-draft-this rules
+
+A draft must clear the *"would I want to query this in 3 months?"* bar.
+The following do NOT trigger draft creation:
+
+- **Speculation and hypotheticals.** *"I wonder what would happen if
+  VIX hit 80"* — no fact to capture.
+- **Restatements of seeded knowledge.** If the brain already has a node
+  with the same content (verify with `brain_query`), do not draft a
+  duplicate. Update the existing node only if there's new information.
+- **In-progress reasoning.** Mid-analysis thinking is not a finding.
+  Wait until the conclusion lands.
+- **Conversation polish.** Greetings, acknowledgments, meta-commentary
+  about the session itself.
+- **One-off questions answered from memory or the codebase.** If a
+  user's question is just a lookup, the answer doesn't need to be
+  brain-written — it's already discoverable.
+
+When uncertain whether something clears the bar, ask the user:
+*"Worth keeping in the brain, or skip?"* Don't unilaterally draft.
