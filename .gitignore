@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Brain DB lives here but should not be committed
+data_store/
+*.db
+*.db-journal
+
+.vscode/
+.idea/
+.DS_Store
