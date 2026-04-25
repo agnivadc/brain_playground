@@ -1,7 +1,8 @@
 # Trading Playground
 
-A synthetic trading-system repo wired to the Knowledge Brain so you can feel
-how the brain works inside a real project context.
+A synthetic trading-system repo wired to the [Knowledge
+Brain](https://github.com/agnivadc/knowledge-brain) so you can feel how the
+brain works inside a real project context.
 
 The code here is intentionally thin — stubs, docs, and config that *look*
 like a trading system. The interesting thing is the **brain wiring** and the
@@ -11,42 +12,62 @@ like a trading system. The interesting thing is the **brain wiring** and the
 
 ```
 trading-playground/
-├── .mcp.json                  Project-scoped MCP server (knowledge-brain)
+├── .mcp.json.template       Template for project-scoped MCP server config
+├── .mcp.json                Generated per-machine by bootstrap (gitignored)
 ├── docs/
-│   ├── strategies/            Strategy specifications (Layer 2)
-│   ├── architecture/          Engine and risk design (Layer 2)
-│   └── decisions/             ADR-style design decisions (Layer 2)
-├── config/                    Strategy + risk YAML (Layer 2 → Layer 3)
+│   ├── strategies/          Strategy specifications (Layer 2)
+│   ├── architecture/        Engine and risk design (Layer 2)
+│   └── decisions/           ADR-style design decisions (Layer 2)
+├── config/                  Strategy + risk YAML (Layer 2 → Layer 3)
 ├── scripts/
-│   ├── seed_brain.py          Pre-populates the brain with realistic nodes
-│   └── setup.ps1              One-shot setup
-└── data_store/                Brain DB lives here (gitignored)
+│   ├── seed_brain.py        Pre-populates the brain with realistic nodes
+│   ├── bootstrap.ps1        One-shot setup (Windows)
+│   └── bootstrap.sh         One-shot setup (macOS / Linux)
+└── data_store/              Brain DB lives here (gitignored)
 ```
 
 ## Setup (one time)
 
-Prerequisite: the `knowledge-brain` repo is a sibling and `uv sync --extra dev`
-has been run inside it. The brain's venv exists at:
+**Prerequisites:**
 
-```
-C:\Users\agnivad\OneDrive - Microsoft\Agniva\knowledge-brain\.venv\
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) on PATH
+- [Claude Code](https://www.claude.com/product/claude-code) installed
+- `git` for cloning this repo
+
+**Steps:**
+
+```bash
+git clone https://github.com/agnivadc/brain_playground.git
+cd brain_playground
 ```
 
-Then, from this directory, run:
+Then run the bootstrap for your platform:
 
 ```powershell
-pwsh scripts/setup.ps1
+# Windows
+pwsh scripts/bootstrap.ps1
 ```
 
-This:
-1. Initializes `data_store/knowledge.db` (this project's brain DB)
-2. Seeds it with 15 realistic trading-domain nodes
+```bash
+# macOS / Linux
+bash scripts/bootstrap.sh
+```
+
+The bootstrap:
+
+1. Verifies `uv` is installed
+2. Generates `.mcp.json` with an absolute `BRAIN_DB_PATH` for your machine
+3. Seeds `data_store/knowledge.db` with 15 realistic trading-domain nodes
+   via `uvx --from git+https://github.com/agnivadc/knowledge-brain.git`
+   (first run downloads and caches the brain package)
+
+You don't need to clone the brain repo — `uvx` resolves it on demand.
 
 ## Use
 
 Open Claude Code from this directory:
 
-```powershell
+```bash
 claude
 ```
 
@@ -59,7 +80,7 @@ available as tools, scoped to **this project's** DB.
 These exercise different brain behaviors:
 
 1. *"What do we know about MES Supertrend's backtest performance?"*
-   → triggers `brain_query("supertrend backtest")`
+   → triggers `brain_query("supertrend")`
 
 2. *"Are there any architectural hard rules I should respect?"*
    → triggers `brain_query` with tags or text "hard-rule"
@@ -75,20 +96,37 @@ These exercise different brain behaviors:
 
 ### Inspecting the DB directly
 
-The brain CLI talks to the same DB:
+The brain CLI talks to the same DB. Run it via `uvx`:
+
+```bash
+# macOS / Linux
+uvx --from git+https://github.com/agnivadc/knowledge-brain.git \
+  brain --db-path "$(pwd)/data_store/knowledge.db" list --limit 20
+
+uvx --from git+https://github.com/agnivadc/knowledge-brain.git \
+  brain --db-path "$(pwd)/data_store/knowledge.db" query "supertrend"
+
+uvx --from git+https://github.com/agnivadc/knowledge-brain.git \
+  brain --db-path "$(pwd)/data_store/knowledge.db" query "drawdown" --tags empirical
+```
 
 ```powershell
-$db = "C:\Users\agnivad\OneDrive - Microsoft\Agniva\trading-playground\data_store\knowledge.db"
-$brain = "C:\Users\agnivad\OneDrive - Microsoft\Agniva\knowledge-brain\.venv\Scripts\brain.exe"
-
-& $brain --db-path $db list --limit 20
-& $brain --db-path $db query "supertrend"
-& $brain --db-path $db query "drawdown" --tags empirical
+# Windows
+$db = Join-Path (Get-Location) "data_store\knowledge.db"
+uvx --from git+https://github.com/agnivadc/knowledge-brain.git `
+  brain --db-path $db list --limit 20
 ```
 
 ## Reset
 
+Re-running the bootstrap deletes and re-seeds the DB:
+
 ```powershell
-Remove-Item data_store\knowledge.db
-pwsh scripts/setup.ps1
+# Windows
+pwsh scripts/bootstrap.ps1
+```
+
+```bash
+# macOS / Linux
+bash scripts/bootstrap.sh
 ```

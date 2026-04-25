@@ -17,3 +17,6 @@ data_store/
 
 # Brain-capture skill draft buffer (per-session, not committed)
 .brain-drafts/
+
+# Generated per-machine by scripts/bootstrap.* — has absolute paths
+.mcp.json
