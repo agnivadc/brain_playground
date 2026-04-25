@@ -27,6 +27,23 @@ The seeded knowledge contains things like:
 If the brain returns relevant nodes, ground your answer in them and cite by
 node id and source_ref.
 
+### Query syntax matters
+
+`brain_query` does **literal substring match** on content. Multi-word phrases
+must appear contiguously; querying `"slippage assumptions"` will *not* match a
+node whose content says *"MES slippage averages 0.25 ticks"*. So:
+
+- Query with **single distinctive keywords** first (`"slippage"`,
+  `"drawdown"`, `"supertrend"`) — not phrases
+- For broad concepts, prefer the `tags` filter (e.g. `tags=["operational"]`,
+  `tags=["hard-rule"]`) over text queries
+- If a single-keyword query returns nothing on a topic you'd expect to find,
+  try synonyms or stems (`"latency"` → `"slow"` / `"lag"`) before concluding
+  the topic is missing. Empty results prove *that keyword* missed, not that
+  the topic is absent
+- When in doubt, fall back to reading source files. The brain accelerates
+  recall; it doesn't replace `grep`
+
 ### When to write
 
 When the user shares a new finding, decision, observation, or external

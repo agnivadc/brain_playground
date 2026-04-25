@@ -1,0 +1,11 @@
+{
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "knowledge-brain"
+  ],
+  "permissions": {
+    "allow": [
+      "mcp__knowledge-brain__brain_query"
+    ]
+  }
+}
