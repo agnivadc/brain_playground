@@ -8,6 +8,9 @@ data_store/
 *.db
 *.db-journal
 
+# Claude Code per-user/machine state (MCP approvals, local permissions)
+.claude/settings.local.json
+
 .vscode/
 .idea/
 .DS_Store
