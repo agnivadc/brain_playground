@@ -1,6 +1,6 @@
 ---
 name: brain-capture
-description: Use during work in this trading-playground repo to capture noteworthy moments into the knowledge brain. Decisions and hard rules write immediately with dedup; observations and findings batch as draft artifacts in .brain-drafts/ for later review via /brain-sweep.
+description: Use during work in this trading-playground repo to capture noteworthy moments into the knowledge brain. Decisions and hard rules write immediately with dedup; observations and findings batch as draft artifacts in .brain-drafts/ for later review via /brain-capture.
 ---
 
 # brain-capture
@@ -146,7 +146,7 @@ directory.
 
 ## §4 Sweep protocol
 
-Triggered by `/brain-sweep` (primary) or the inferred-trigger prompt
+Triggered by `/brain-capture` (primary) or the inferred-trigger prompt
 (see §5). Steps:
 
 1. **List drafts.** Read `.brain-drafts/`. If empty, print
@@ -211,7 +211,7 @@ report the failure and move to the next draft. No silent loss.
 
 **Resume after crash.** If a sweep is interrupted, drafts already
 written-and-deleted are committed to brain; remaining files are still
-on disk. Re-running `/brain-sweep` resumes naturally.
+on disk. Re-running `/brain-capture` resumes naturally.
 
 ## §5 Inferred-trigger heuristic
 
@@ -235,7 +235,7 @@ User responses:
 - **yes** → invoke the sweep protocol (§4).
 - **later** → suppress further inferred prompts for the rest of the
   session. The user can still trigger the sweep explicitly with
-  `/brain-sweep`.
+  `/brain-capture`.
 - **no** → same as `later`.
 
 One inferred prompt per session, max. Never nag.
@@ -270,7 +270,7 @@ When uncertain whether something clears the bar, ask the user:
 | Dedup query returns many matches | Show top 3 by recency. If user wants more, run another query. Never dump >3 unprompted. |
 | Proposed supersede lowers confidence | Surface explicitly: *"This would lower confidence from X → Y. Confirm?"* Never silently regress. |
 | Two drafts in same session about same fact | Cross-compare pre-step in §4 catches these. Offer keep-both / merge / drop. |
-| Crash mid-sweep | Already-written drafts are deleted; remaining files persist. Re-running `/brain-sweep` resumes. |
+| Crash mid-sweep | Already-written drafts are deleted; remaining files persist. Re-running `/brain-capture` resumes. |
 | Hand-authored draft (user drops a file in `.brain-drafts/` directly) | Treated identically. If frontmatter is missing fields, sweep prompts to fill them inline before writing. |
 | Brain MCP unreachable | Fail the current draft, leave the file in place, move to next or abort. No silent loss. |
 | Slug collision in same second | Append `-2`, `-3` to filename. Never overwrite. |
