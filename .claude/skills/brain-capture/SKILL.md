@@ -260,3 +260,28 @@ The following do NOT trigger draft creation:
 
 When uncertain whether something clears the bar, ask the user:
 *"Worth keeping in the brain, or skip?"* Don't unilaterally draft.
+
+## §7 Edge cases
+
+| Situation | Handling |
+|---|---|
+| Context compaction mid-session | Drafts on disk survive. If running sweep without recalling buffered items, re-list `.brain-drafts/` first; treat the directory as ground truth. |
+| Malformed frontmatter in a draft | Show with `⚠️ unparseable frontmatter` flag in the sweep table. User fixes the file directly or rejects. |
+| Dedup query returns many matches | Show top 3 by recency. If user wants more, run another query. Never dump >3 unprompted. |
+| Proposed supersede lowers confidence | Surface explicitly: *"This would lower confidence from X → Y. Confirm?"* Never silently regress. |
+| Two drafts in same session about same fact | Cross-compare pre-step in §4 catches these. Offer keep-both / merge / drop. |
+| Crash mid-sweep | Already-written drafts are deleted; remaining files persist. Re-running `/brain-sweep` resumes. |
+| Hand-authored draft (user drops a file in `.brain-drafts/` directly) | Treated identically. If frontmatter is missing fields, sweep prompts to fill them inline before writing. |
+| Brain MCP unreachable | Fail the current draft, leave the file in place, move to next or abort. No silent loss. |
+| Slug collision in same second | Append `-2`, `-3` to filename. Never overwrite. |
+| Empty `.brain-drafts/` on sweep | Print "no drafts to sweep" and exit cleanly. |
+| Inferred-trigger false positive | Honor "later" for the rest of the session; don't re-prompt. |
+| User says "stop drafting" mid-session | Suppress all batch drafts for the rest of the session. Immediate-tier still works. Re-enabled next session. |
+
+### Out of scope
+
+- Concurrent Claude sessions touching the same `.brain-drafts/` directory
+  — single-user playground; not solved.
+- Long-term draft expiry — old drafts sit until manually swept or deleted.
+- Programmatic sweep (cron / hook) — explicit user trigger only.
+- Migration from any prior buffer format — none exists.
