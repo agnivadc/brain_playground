@@ -19,7 +19,7 @@ PLAYGROUND="$(cd "$SCRIPT_DIR/.." && pwd)"
 TEMPLATE="$PLAYGROUND/.mcp.json.template"
 MCP_CONFIG="$PLAYGROUND/.mcp.json"
 DB_PATH="$PLAYGROUND/data_store/knowledge.db"
-SEED_SCRIPT="$SCRIPT_DIR/seed_brain.py"
+JSONL_PATH="$PLAYGROUND/data_store/knowledge.jsonl"
 BRAIN_GIT_URL="git+https://github.com/agnivadc/knowledge-brain.git"
 
 # 1. Check uv is installed
@@ -44,14 +44,18 @@ fi
 sed "s|__DB_PATH__|$DB_PATH|" "$TEMPLATE" > "$MCP_CONFIG"
 echo "[2/3] Wrote $MCP_CONFIG"
 
-# 3. Seed the database
+# 3. Build the database from the committed JSONL
 mkdir -p "$(dirname "$DB_PATH")"
+if [[ ! -f "$JSONL_PATH" ]]; then
+    echo "Knowledge JSONL not found at $JSONL_PATH. The repo is likely incomplete." >&2
+    exit 1
+fi
 if [[ -f "$DB_PATH" ]]; then
-    echo "      DB exists at $DB_PATH; removing for fresh seed"
+    echo "      DB exists at $DB_PATH; removing to rebuild from JSONL"
     rm -f "$DB_PATH"
 fi
-echo "[3/3] Seeding via uvx (first run downloads the brain package)"
-uvx --from "$BRAIN_GIT_URL" python "$SEED_SCRIPT"
+echo "[3/3] Importing $JSONL_PATH via uvx (first run downloads the brain package)"
+uvx --from "$BRAIN_GIT_URL" brain --db-path "$DB_PATH" import "$JSONL_PATH"
 
 echo
 echo "Done. Next:"

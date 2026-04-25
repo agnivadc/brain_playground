@@ -3,10 +3,12 @@ __pycache__/
 .venv/
 venv/
 
-# Brain DB lives here but should not be committed
-data_store/
-*.db
-*.db-journal
+# Brain DB is a local artifact rebuilt from data_store/knowledge.jsonl on
+# every bootstrap; only the JSONL is committed and tracked across collaborators.
+data_store/*.db
+data_store/*.db-journal
+data_store/*.db-wal
+data_store/*.db-shm
 
 # Claude Code per-user/machine state (MCP approvals, local permissions)
 .claude/settings.local.json

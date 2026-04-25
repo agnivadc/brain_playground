@@ -17,7 +17,7 @@ $Playground  = Split-Path -Parent $PSScriptRoot
 $Template    = Join-Path $Playground ".mcp.json.template"
 $McpConfig   = Join-Path $Playground ".mcp.json"
 $DbPath      = Join-Path $Playground "data_store\knowledge.db"
-$SeedScript  = Join-Path $PSScriptRoot "seed_brain.py"
+$JsonlPath   = Join-Path $Playground "data_store\knowledge.jsonl"
 $BrainGitUrl = "git+https://github.com/agnivadc/knowledge-brain.git"
 
 # 1. Check uv is installed
@@ -46,17 +46,21 @@ $content = $content -replace '__DB_PATH__', $dbPathEscaped
 Set-Content -Path $McpConfig -Value $content -NoNewline
 Write-Host "[2/3] Wrote $McpConfig"
 
-# 3. Seed the database
+# 3. Build the database from the committed JSONL
 $DbDir = Split-Path -Parent $DbPath
 New-Item -ItemType Directory -Force $DbDir | Out-Null
+if (-not (Test-Path $JsonlPath)) {
+    Write-Error "Knowledge JSONL not found at $JsonlPath. The repo is likely incomplete."
+    exit 1
+}
 if (Test-Path $DbPath) {
-    Write-Host "      DB exists at $DbPath; removing for fresh seed"
+    Write-Host "      DB exists at $DbPath; removing to rebuild from JSONL"
     Remove-Item $DbPath -Force
 }
-Write-Host "[3/3] Seeding via uvx (first run downloads the brain package)"
-& uvx --from $BrainGitUrl python $SeedScript
+Write-Host "[3/3] Importing $JsonlPath via uvx (first run downloads the brain package)"
+& uvx --from $BrainGitUrl brain --db-path $DbPath import $JsonlPath
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Seed script failed with exit code $LASTEXITCODE"
+    Write-Error "brain import failed with exit code $LASTEXITCODE"
     exit $LASTEXITCODE
 }
 
