@@ -83,7 +83,7 @@ def main() -> int:
     banned = re.compile(r"sole authority|governing rules", re.I)
     for rel in ["CLAUDE.md", "AGENTS.md", ".github/copilot-instructions.md"]:
         text = (ROOT / rel).read_text(encoding="utf-8")
-        for tag in ["[A1]", "[A2]", "[A3]", "[A4]"]:
+        for tag in ["[A1]", "[A2]", "[A3]", "[A4]", "[A5]"]:
             if tag not in text:
                 return fail(f"{rel} missing {tag}")
         if banned.search(text):
