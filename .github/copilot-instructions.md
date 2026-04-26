@@ -16,7 +16,7 @@ If the file is successfully bound, follow its binding conditions, invalidation c
 
 [A5] Capability Declaration
 ```yaml
-harness-id: claude-code
+harness-id: copilot
 capability-tier: 2
 l3-transport: mcp
 brain-db-path: $BRAIN_DB_PATH

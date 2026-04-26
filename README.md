@@ -1,190 +1,91 @@
-# Trading Playground
+# Agent OS
 
-A synthetic trading-system repo wired to the [Knowledge
-Brain](https://github.com/agnivadc/knowledge-brain) so you can feel how the
-brain works inside a real project context.
+AI session governance and persistent memory - works in Pi, Claude Code, Copilot, and Codex.
 
-The code here is intentionally thin — stubs, docs, and config that *look*
-like a trading system. The interesting thing is the **brain wiring** and the
-**seeded knowledge** that mirrors what the Brain accumulates over time.
+Clone it into your project, run bootstrap, and open your harness. Every session starts
+by declaring itself `ACTIVE` or `NOT_ACTIVE` before doing anything else. Skills load
+on demand. Memory persists across sessions.
 
-## Layout
+## Prerequisites
 
-```
-trading-playground/
-├── .mcp.json.template       Template for project-scoped MCP server config
-├── .mcp.json                Generated per-machine by bootstrap (gitignored)
-├── docs/
-│   ├── strategies/          Strategy specifications (Layer 2)
-│   ├── architecture/        Engine and risk design (Layer 2)
-│   └── decisions/           ADR-style design decisions (Layer 2)
-├── config/                  Strategy + risk YAML (Layer 2 → Layer 3)
-├── scripts/
-│   ├── bootstrap.{ps1,sh}   One-shot setup (Windows / macOS / Linux)
-│   └── sync.{ps1,sh}        Move knowledge between local DB and the JSONL
-└── data_store/
-    ├── knowledge.jsonl      Source of truth, committed and shared (LFR-style)
-    └── knowledge.db         Local SQLite, rebuilt from the JSONL (gitignored)
-```
+- `python3`
+- `uvx` - install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 
-## Setup (one time)
-
-**Prerequisites:**
-
-- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) on PATH
-- [Claude Code](https://www.claude.com/product/claude-code) installed
-- `git` for cloning this repo
-
-**Steps:**
+## Quick Start
 
 ```bash
-git clone https://github.com/agnivadc/brain_playground.git
-cd brain_playground
-```
+# 1. Get Agent OS (new project)
+git clone <repo> my-project
+cd my-project
 
-Then run the bootstrap for your platform:
+# 1. Or add to an existing project
+git submodule add <repo> .agent-os
 
-```powershell
-# Windows
-pwsh scripts/bootstrap.ps1
-```
-
-```bash
-# macOS / Linux
-bash scripts/bootstrap.sh
-```
-
-The bootstrap:
-
-1. Verifies `uv` is installed
-2. Generates `.mcp.json` with an absolute `BRAIN_DB_PATH` for your machine
-3. Imports `data_store/knowledge.jsonl` into a fresh `data_store/knowledge.db`
-   via `uvx --from git+https://github.com/agnivadc/knowledge-brain.git`
-   (first run downloads and caches the brain package)
-
-You don't need to clone the brain repo — `uvx` resolves it on demand.
-
-## Collaborating across machines
-
-The brain DB itself is **not** committed — only `data_store/knowledge.jsonl`,
-which is the canonical line-oriented dump of all nodes. The local SQLite DB
-is rebuilt from the JSONL on every bootstrap.
-
-This makes the brain knowledge collaborative across users in the same way
-source code is: pull the JSONL, work, export your additions back into the
-JSONL, commit, push.
-
-### Workflow
-
-**Pulling someone else's contributions:**
-
-```bash
-git pull
-bash scripts/sync.sh import         # macOS / Linux
-pwsh scripts/sync.ps1 import        # Windows
-```
-
-This merges new nodes from the JSONL into your local DB. Existing nodes
-(matching by id) are left alone — your in-progress local writes survive.
-Pass `--force` to the underlying brain CLI if you want pull to overwrite
-local changes; the wrapper is opinionated towards "merge wins."
-
-**Pushing your contributions:**
-
-```bash
-bash scripts/sync.sh export         # macOS / Linux
-pwsh scripts/sync.ps1 export        # Windows
-git add data_store/knowledge.jsonl
-git diff --cached data_store/knowledge.jsonl    # review what you're sharing
-git commit -m "brain: <one-line summary of what you added>"
-git push
-```
-
-### Conflict resolution
-
-Two collaborators adding **different** facts → no conflict (different node
-ids → different lines → clean text-level merge).
-
-Two collaborators editing the **same** node (e.g. via supersedes) → standard
-git conflict markers in the JSONL. Each line is one node, sorted by id, so
-the conflict surface is small. Resolve textually, commit, both sides re-import.
-
-### Hard reset
-
-If your local DB drifts and you want to start over from the committed JSONL:
-
-```bash
-rm data_store/knowledge.db
-bash scripts/sync.sh import         # or pwsh scripts/sync.ps1 import on Windows
-```
-
-The DB is a derived artifact; deleting it is always safe as long as the
-JSONL is up to date.
-
-## Use
-
-Open Claude Code from this directory:
-
-```bash
-claude
-```
-
-Claude Code reads `.mcp.json` and prompts to approve the `knowledge-brain`
-server. Approve it. From that point, `brain_write` and `brain_query` are
-available as tools, scoped to **this project's** DB.
-
-### Things to ask Claude
-
-These exercise different brain behaviors:
-
-1. *"What do we know about MES Supertrend's backtest performance?"*
-   → triggers `brain_query("supertrend")`
-
-2. *"Are there any architectural hard rules I should respect?"*
-   → triggers `brain_query` with tags or text "hard-rule"
-
-3. *"Save this to brain: I noticed risk vetoes spike during Fed announcements. Tags: empirical, risk, observation."*
-   → triggers `brain_write`, then queryable in future sessions
-
-4. Open a **new** Claude session, then ask: *"What did we observe about Fed announcements?"*
-   → cross-session recall — the canonical brain value loop
-
-5. *"What's missing in the brain about portfolio sizing?"*
-   → exercises a meta/gap node
-
-### Inspecting the DB directly
-
-The brain CLI talks to the same DB. Run it via `uvx`:
-
-```bash
-# macOS / Linux
+# 2. Initialize memory (one-time, global across all your projects)
 uvx --from git+https://github.com/agnivadc/knowledge-brain.git \
-  brain --db-path "$(pwd)/data_store/knowledge.db" list --limit 20
+  brain --db-path ~/.knowledge-brain/knowledge.db init
 
-uvx --from git+https://github.com/agnivadc/knowledge-brain.git \
-  brain --db-path "$(pwd)/data_store/knowledge.db" query "supertrend"
-
-uvx --from git+https://github.com/agnivadc/knowledge-brain.git \
-  brain --db-path "$(pwd)/data_store/knowledge.db" query "drawdown" --tags empirical
+# 3. Run bootstrap
+bash bootstrap/bootstrap.sh --enable-mcp
 ```
 
-```powershell
-# Windows
-$db = Join-Path (Get-Location) "data_store\knowledge.db"
-uvx --from git+https://github.com/agnivadc/knowledge-brain.git `
-  brain --db-path $db list --limit 20
+## What You Get
+
+- Every AI session emits a `BINDING` event - `ACTIVE` or `NOT_ACTIVE` - before doing anything else
+- Skills load on demand when triggered by keywords in your request
+- Memory persists across sessions: the AI writes what it learns, reads it back next time
+
+## Harness Setup
+
+### Pi (primary) - no extra config
+Pi reads `AGENTS.md`. Memory works via the `brain` CLI (bash tool). Nothing else to do.
+Set `BRAIN_DB_PATH` in your shell profile:
+```bash
+export BRAIN_DB_PATH="$HOME/.knowledge-brain/knowledge.db"
 ```
 
-## Reset
-
-Re-running the bootstrap rebuilds the DB from the committed JSONL:
-
-```powershell
-# Windows
-pwsh scripts/bootstrap.ps1
+### Claude Code
+```bash
+claude mcp add knowledge-brain \
+  --scope user \
+  --env BRAIN_DB_PATH="$HOME/.knowledge-brain/knowledge.db" \
+  -- uvx --from git+https://github.com/agnivadc/knowledge-brain.git brain-mcp
 ```
+Restart Claude Code. The tools `brain_write` and `brain_query` appear automatically.
+
+### Copilot
+`.github/copilot-instructions.md` is already present. Enable MCP in Copilot settings and
+configure the `knowledge-brain` server with the same `brain-mcp` command above.
+
+### Codex
+Codex reads `AGENTS.md`. Memory works via the `brain` CLI (bash tool). Same setup as Pi.
+
+## Memory
+
+| Scope | Path | When to use |
+|---|---|---|
+| Global (recommended) | `~/.knowledge-brain/knowledge.db` | Personal use - shared across all projects |
+| Project-scoped | `data_store/knowledge.db` | Teams sharing a DB committed to the repo |
+
+Check what's stored:
+```bash
+brain --db-path $BRAIN_DB_PATH list
+```
+
+## Verify the Bundle
 
 ```bash
-# macOS / Linux
-bash scripts/bootstrap.sh
+python3 scripts/verify_agent_os_bundle.py
 ```
+
+Pass = ready. Fail = the exact line tells you what's missing or mismatched.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `uvx: command not found` | `uv` not installed | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| Session starts with `NOT_ACTIVE` | Constitution binding failed | Run `python3 scripts/verify_agent_os_bundle.py` - it will name the failing check |
+| `brain_query` returns nothing for known data | CLI and MCP point at different DBs | Ensure `BRAIN_DB_PATH` is the same absolute path everywhere |
+| `brain_write` / `brain_query` missing in Claude Code | MCP server not registered | Run the `claude mcp add` command above, then restart Claude Code |
+| First `uvx` run is slow | Downloading and caching the package | Subsequent runs are fast (cache: `~/.cache/uv/`) |
