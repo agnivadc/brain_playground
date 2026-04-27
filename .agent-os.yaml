@@ -1,0 +1,8 @@
+project_id: brain-playground
+domain_type: trading-research
+runtime_version: 0.1.x
+memory_namespace: brain-playground
+verification_profile: default
+project_constitution: docs/architecture/consumer-runtime.md
+global_memory_read: true
+global_memory_write: false

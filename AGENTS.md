@@ -1,23 +1,11 @@
-[A1] Self-Declaration
-This file is non-authoritative. It does not define execution rules, policies, or system identity. It only attempts to invoke the governing contract.
+[A1] Consumer Declaration
+This repository is a consumer of a centrally installed Agent OS runtime.
 
-[A2] Invocation Instruction
-Before any execution begins, read: `./AGENT_OS_CONSTITUTION.md`.
-The file at that path is the governing contract for this session.
+[A2] Binding Instruction
+Before execution, locate `.agent-os.yaml` and bind through the machine-local runtime.
 
 [A3] Failure Instruction
-If that file cannot be read, does not exist, or cannot be bound as governing authority:
-- Do not proceed as Agent OS active
-- Produce the required NOT_ACTIVE binding output immediately
-- Operate under no Agent OS authority
+If the runtime cannot bind successfully, do not proceed as active.
 
 [A4] Deference
-If the file is successfully bound, follow its binding conditions, invalidation conditions, and output contract exactly. This file has no further instructions.
-
-[A5] Capability Declaration
-```yaml
-harness-id: [pi, codex]
-capability-tier: 1
-l3-transport: bash-cli
-brain-db-path: $BRAIN_DB_PATH
-```
+The central runtime constitution and policies govern execution.
