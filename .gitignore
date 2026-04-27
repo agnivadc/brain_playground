@@ -20,5 +20,9 @@ data_store/*.db-shm
 # Brain-capture skill draft buffer (per-session, not committed)
 .brain-drafts/
 
+# Context OS local session state
+.agent-os/
+.agent-os.lock
+
 # Generated per-machine by scripts/bootstrap.* — has absolute paths
 .mcp.json
