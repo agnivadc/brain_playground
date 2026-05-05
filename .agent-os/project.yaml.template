@@ -1,0 +1,31 @@
+# Agent-OS v1.0.0 project manifest for brain_playground.
+#
+# Rendered to .agent-os/project.yaml by scripts/bootstrap-ccp.{sh,ps1}
+# (the rendered file is gitignored — it carries an absolute workspace.root).
+#
+# Schema reference: agent-os v1.0.0 src/core/manifest.ts (ProjectConfig).
+
+project_id: brain-playground
+domain_type: trading-research
+runtime_version: 0.1.x
+memory_namespace: brain-playground
+verification_profile: production
+critical_actions:
+  - trade_execute
+  - global_memory_write
+workspace:
+  root: __WORKSPACE_ROOT__
+
+# Memory scope policy (informational; v1.0.0 does not enforce these yet,
+# but they document this project's intent for future agent-os releases that
+# will gate brain writes by manifest policy).
+memory_policy:
+  global_memory_read: true
+  global_memory_write: false
+
+# Trust the agent-os Pi extension explicitly so the policy module's
+# decision-flow doesn't escalate its tool calls to "untrusted".
+trust_registry:
+  pi_packages:
+    - package: "@agnivadc/agent-os"
+      trust: trusted

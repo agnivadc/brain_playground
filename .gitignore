@@ -20,9 +20,17 @@ data_store/*.db-shm
 # Brain-capture skill draft buffer (per-session, not committed)
 .brain-drafts/
 
-# Context OS local session state
-.agent-os/
+# Agent-OS v1.0.0 per-machine state. The .agent-os/project.yaml.template is
+# committed (placeholders are rendered per-machine by bootstrap-ccp); the
+# rendered manifest, runtime/task state, and fetched governance files are
+# not.
+.agent-os/project.yaml
+.agent-os/runtime/
+.agent-os/tasks/
+.agent-os/schemas/
+.agent-os/contracts/
 .agent-os.lock
+AGENT_OS_CONSTITUTION.md
 
 # Generated per-machine by scripts/bootstrap.* — has absolute paths
 .mcp.json

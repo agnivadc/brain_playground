@@ -2,77 +2,161 @@
 
 A reference project that shows how Agent OS works in practice.
 
-This repo is a **consumer** of the Agent OS control plane. It does not contain any runtime code — it contains the configuration, manifests, and documents that make a project Agent-OS-ready. Think of it as a working example you can look at, copy from, or experiment with.
+This repo is a **consumer** of the Agent OS control plane. It does not contain runtime code — it contains the configuration, manifests, and documents that make a project Agent-OS-ready. Think of it as a working example you can look at, copy from, or experiment with.
+
+Agent OS shipped its first tagged release as **v1.0.0** (2026-05-05). It now lives at [`algoSiliguri/Agent_OS`](https://github.com/algoSiliguri/Agent_OS) (renamed from `context_os` on 2026-05-04) and ships as a TypeScript Pi extension. The Python `context-os` CLI from the v3 era no longer exists.
 
 ---
 
 ## What this repo demonstrates
 
-- How to declare a project's identity and rules in `.agent-os.yaml`
-- How to set critical actions that require human approval before the AI can run them
-- How memory scoping works (this project reads global memory but cannot write to it)
-- The full Agent OS bundle structure: constitution, manifest, event log, lock file
+- How to declare a project's identity and rules in `.agent-os/project.yaml`
+- How to set critical actions that document operations needing human approval
+- How memory scoping works (this project reads global memory but won't pollute it with project-local writes by default)
+- The full Agent OS bundle structure: constitution, manifest, schemas, contracts, event log
+- **Two interchangeable harnesses** against the same brain DB:
+  - **Claude Code** with brain via MCP — chat-style brain queries (`brain_query`, `brain_write`)
+  - **Pi** with the agent-os v1.0.0 extension — structured slash commands (`/grill /plan /run /verify /remember /status /doctor`)
+
+Both setups can coexist on the same checkout. They're different transports to the same DB.
 
 ---
 
 ## Prerequisites
 
-To run this project you need:
+Common (both setups):
 
-1. **Python 3.12+** — check with `python3 --version`
-2. **uv** — install with: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-3. **context_os** — the Agent OS runtime (see setup below)
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) — for the brain CLI install
+- `git`, plus `curl` and either `bash` or `pwsh` — for bootstraps
+- The brain CLI itself, installed once per machine:
+  ```bash
+  uv tool install --from git+https://github.com/agnivadc/knowledge-brain.git knowledge-brain
+  ```
+
+For Setup A only:
+- [Claude Code](https://www.claude.com/product/claude-code)
+
+For Setup B only:
+- Node.js ≥20 (for `npm`)
+- The Pi coding agent: `npm install -g @mariozechner/pi-coding-agent`
+- An `ANTHROPIC_API_KEY` exported in your shell
 
 ---
 
-## Setup
+## Setup A — Brain via MCP (Claude Code)
 
-### Step 1 — Install the Agent OS runtime
+The brain is reachable from Claude Code as MCP tools (`brain_query`, `brain_write`).
 
-```bash
-# Clone context_os (the control plane) somewhere on your machine
-git clone https://github.com/algoSiliguri/context_os.git ~/agent-os
-cd ~/agent-os
-uv sync
-```
+### A1 — initialise a brain DB
 
-### Step 2 — Set up global memory (one-time)
+You can use either a project-local DB or your global one (recommended for cross-project recall):
 
 ```bash
-uvx --from git+https://github.com/agnivadc/knowledge-brain.git \
-  brain --db-path ~/.knowledge-brain/knowledge.db init
-
-# Add this to your shell profile (~/.zshrc or ~/.bashrc)
+brain --db-path ~/.knowledge-brain/knowledge.db init
 export BRAIN_DB_PATH="$HOME/.knowledge-brain/knowledge.db"
 ```
 
-### Step 3 — Bind this project
+Add the `export` to your shell profile so every new shell sees it.
+
+### A2 — wire MCP
+
+Render `.mcp.json` from the template (or write it manually):
+
+```json
+{
+  "mcpServers": {
+    "knowledge-brain": {
+      "command": "brain-mcp",
+      "env": {
+        "BRAIN_DB_PATH": "/absolute/path/to/your/knowledge.db"
+      }
+    }
+  }
+}
+```
+
+Use absolute paths — Claude Code may launch from a different working directory.
+
+### A3 — open Claude Code
 
 ```bash
-# From the brain_playground directory
-cd /path/to/brain_playground
-
-uv --directory ~/agent-os run context-os bind
+claude
 ```
 
-Expected output:
-```
-BINDING ACTIVE
-session_id: ...
-project_id: brain-playground
-conditions_verified: C1 C2 C3 C4 C5 C6 C7 C8 C11
+Claude Code reads `.mcp.json` and prompts to approve the `knowledge-brain` server. Approve. From that point, `brain_write` and `brain_query` are available as tools.
+
+### Things to ask Claude
+
+These exercise different brain behaviours:
+
+1. *"What do we know about MES Supertrend's backtest performance?"* → `brain_query`
+2. *"Save this to brain: I noticed risk vetoes spike during Fed announcements. Tags: empirical, risk."* → `brain_write`
+3. Open a new Claude session and ask about Fed announcements again → cross-session recall.
+
+---
+
+## Setup B — Agent-OS CCP (Pi)
+
+The structured loop: Pi loads agent-os v1.0.0 as an extension; six slash commands walk a feature through grill → plan → run → verify → remember.
+
+### B1 — run the bootstrap
+
+```powershell
+# Windows
+pwsh scripts/bootstrap-ccp.ps1
 ```
 
-If it says `NOT_ACTIVE`, run the doctor to see what's wrong:
 ```bash
-uv --directory ~/agent-os run context-os doctor
+# macOS / Linux
+bash scripts/bootstrap-ccp.sh
 ```
+
+The bootstrap:
+
+1. Verifies prereqs (`uv`, `npm`, `pi`, `curl`)
+2. Installs / refreshes the brain CLI globally via `uv tool install` (idempotent)
+3. Installs agent-os v1.0.0 as a Pi extension: `pi install git:github.com/algoSiliguri/Agent_OS@v1.0.0`
+4. Fetches `AGENT_OS_CONSTITUTION.md` + `.agent-os/schemas/*` + `.agent-os/contracts/index.json` from the agent-os v1.0.0 tag (raw bytes — must not be reformatted, content-hashes depend on it)
+5. Renders `.agent-os/project.yaml` from `.agent-os/project.yaml.template` with this checkout's absolute path
+
+### B2 — export `BRAIN_DB_PATH`
+
+The bootstrap prints the exact line. Recommended: point at the same global DB Setup A uses, so all captures land in one place:
+
+```bash
+export BRAIN_DB_PATH="$HOME/.knowledge-brain/knowledge.db"
+```
+
+### B3 — open Pi
+
+```bash
+pi
+```
+
+### B4 — verify
+
+In the Pi prompt, type `/doctor`. If everything's wired you'll see `status: ok`. If not, the failing line tells you which check (B0 binding header, B1 schema-presence, B5 binding event, etc.).
+
+### B5 — walk the loop
+
+```
+/grill add a smoke-test feature to the playground
+/plan
+/run
+/verify
+/remember
+/status
+```
+
+Artifacts land under `.agent-os/tasks/T-001/` (`grill.yaml`, `plan.yaml`, `execution.yaml`, `verification.yaml`, `knowledge.yaml`). Truth log at `.agent-os/runtime/events.jsonl`.
+
+For a per-step transcript with expected events, see [the Section-16 walkthrough in the agent-os repo](https://github.com/algoSiliguri/Agent_OS/blob/v1.0.0/docs/demo/section-16-walkthrough.md).
 
 ---
 
 ## How this project is configured
 
-The manifest file `.agent-os.yaml` declares everything Agent OS needs to know about this project:
+The rendered `.agent-os/project.yaml` (from `.template`) declares everything Agent OS needs to know:
 
 ```yaml
 project_id: brain-playground
@@ -80,72 +164,55 @@ domain_type: trading-research
 runtime_version: 0.1.x
 memory_namespace: brain-playground
 verification_profile: production
-global_memory_read: true
-global_memory_write: false        # reads global memory but cannot write to it
 critical_actions:
-  - trade_execute                 # must be approved before any trade executes
-  - global_memory_write           # must be approved before writing to global memory
+  - trade_execute
+  - global_memory_write
+workspace:
+  root: <absolute path to this checkout>
+
+memory_policy:
+  global_memory_read: true
+  global_memory_write: false
+
+trust_registry:
+  pi_packages:
+    - package: "@agnivadc/agent-os"
+      trust: trusted
 ```
 
-**Critical actions** are operations that require explicit human approval before the AI can run them. When the AI requests a critical action, it is held in a pending queue. You approve or deny it with:
+**Critical actions** document operations that should require human approval. v1.0.0's policy module (`src/ccp/policy/`) gates each `tool_call` against the 4-tier permission ladder. Tier-3 calls re-prompt every time; tier-4 calls are blocked unless `break_glass.enabled` is set.
 
-```bash
-# Approve a pending action
-uv --directory ~/agent-os run context-os approve <action-hash>
-
-# Deny a pending action
-uv --directory ~/agent-os run context-os deny <action-hash> --reason "not now"
-```
-
----
-
-## Checking session state
-
-```bash
-# Current snapshot
-uv --directory ~/agent-os run context-os status
-
-# Live view that refreshes automatically
-uv --directory ~/agent-os run context-os status --watch
-```
-
-The status view shows:
-- Whether the session is `ACTIVE` or `NOT_ACTIVE`
-- Any pending actions waiting for approval
-- Memory route (which database is in use)
-- Recent events
+**Memory policy** fields document this project's *intent*. v1.0.0 doesn't enforce them (`/remember` writes go wherever `BRAIN_DB_PATH` points), but they're committed for future agent-os releases that gate brain writes by manifest policy.
 
 ---
 
 ## What each file does
 
-| File | Purpose |
+| File / dir | Purpose |
 |---|---|
-| `.agent-os.yaml` | Project manifest — identity, memory scope, critical actions |
-| `AGENTS.md` | Instructions for AI assistants (read by Codex, Pi) |
-| `CLAUDE.md` | Instructions for Claude Code specifically |
-| `data_store/` | Project-local data storage |
-| `docs/design/` | Design documents for this project and the broader Agent OS system |
-| `docs/strategies/` | Domain-specific strategy documents (trading research context) |
-| `docs/decisions/` | Architecture decision records |
-| `scripts/sync.sh` | Helper script for syncing data |
-| `config/` | Configuration files |
+| `.agent-os/project.yaml.template` | v1.0.0 manifest template (committed) |
+| `.agent-os/project.yaml` | Rendered per machine by `bootstrap-ccp` (gitignored — has absolute path) |
+| `.agent-os/{runtime,tasks,schemas,contracts}/` | Per-machine state + fetched governance (gitignored) |
+| `AGENT_OS_CONSTITUTION.md` | Fetched from agent-os v1.0.0 tag by `bootstrap-ccp` (gitignored) |
+| `AGENTS.md` / `CLAUDE.md` / `.github/copilot-instructions.md` | Capability declarations per harness — each defers to the constitution |
+| `docs/architecture/consumer-runtime.md` | Notes on this repo as a v1.0.0 consumer |
+| `docs/design/` | Design history (v3 Python era, pre-v1.0.0 TS rewrite) |
+| `docs/onboarding-any-project.md` | How to add agent-os + brain to your own repo |
+| `data_store/knowledge.jsonl` | Project-scoped brain export (committed, line-oriented) |
+| `data_store/knowledge.db` | Project-scoped brain DB (gitignored, optional — defaults to global) |
+| `scripts/bootstrap-ccp.{sh,ps1}` | One-shot Setup B bootstrap |
+| `scripts/sync.{sh,ps1}` | Sync helpers between brain DB and committed JSONL |
 
 ---
 
-## Using this as a template for your own project
+## Adding agent-os + brain to your own repo
 
-To make your own project Agent-OS-ready:
-
-1. Copy `.agent-os.yaml` to your project root and fill in your `project_id`, `domain_type`, and `critical_actions`.
-2. Copy `AGENTS.md` and `CLAUDE.md` to your project root (they just point at the Agent OS constitution — no changes needed).
-3. Run `context-os bind` from your project directory.
-
-That's it. The AI will now declare itself `ACTIVE` or `NOT_ACTIVE` at the start of every session, and critical actions will require your approval.
+This playground is one example. To add the same wiring to any other repo, see [`docs/onboarding-any-project.md`](docs/onboarding-any-project.md).
 
 ---
 
 ## Related repos
 
-- [context_os](https://github.com/algoSiliguri/context_os) — the Agent OS runtime (bind, status, doctor, approve, deny)
+- [Agent_OS](https://github.com/algoSiliguri/Agent_OS) — the agent-os runtime + Pi extension (currently `v1.0.0`)
 - [knowledge-brain](https://github.com/agnivadc/knowledge-brain) — the persistent memory layer
+- [pi-mono](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) — the Pi harness
