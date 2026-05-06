@@ -39,7 +39,7 @@ For Setup A only:
 For Setup B only:
 - Node.js ≥20 (for `npm`)
 - The Pi coding agent: `npm install -g @mariozechner/pi-coding-agent`
-- An `ANTHROPIC_API_KEY` exported in your shell
+- An LLM API key for whichever provider Pi will use — `ANTHROPIC_API_KEY` (Claude), `OPENAI_API_KEY` (GPT), `GOOGLE_API_KEY` (Gemini), or any custom/local model. See the [Agent OS README's "Pick a model in Pi"](https://github.com/algoSiliguri/Agent_OS#pick-a-model-in-pi) section for the full provider list and `pi /login` interactive setup.
 
 ---
 
@@ -120,11 +120,19 @@ In Pi:
 
 ### B3 — export `BRAIN_DB_PATH`
 
-Recommended: point at the same global DB Setup A uses, so all captures land in one place:
+Recommended: point at the same global DB Setup A uses, so all captures land in one place.
 
+**macOS / Linux (bash, zsh):**
 ```bash
 export BRAIN_DB_PATH="$HOME/.knowledge-brain/knowledge.db"
 ```
+
+**Windows (PowerShell):**
+```powershell
+$env:BRAIN_DB_PATH = "$HOME\.knowledge-brain\knowledge.db"
+```
+
+To persist across shells, add the line to your shell rc file (`~/.zshrc`, `~/.bashrc`) on macOS/Linux, or use `[System.Environment]::SetEnvironmentVariable('BRAIN_DB_PATH', ..., 'User')` on Windows.
 
 ### B4 — verify
 
