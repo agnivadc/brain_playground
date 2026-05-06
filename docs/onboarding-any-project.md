@@ -4,10 +4,10 @@ This guide is harness-agnostic where possible. You're adding two things:
 
 1. **Brain** — a persistent memory layer (SQLite DB + CLI + MCP server).
    Lives at [`agnivadc/knowledge-brain`](https://github.com/agnivadc/knowledge-brain).
-2. **agent-os v1.0.0** — a Pi extension that wraps your dev loop in
+2. **agent-os v1.1.0** — a Pi extension that wraps your dev loop in
    `/grill /plan /run /verify /remember /status /doctor`. Lives at
    [`algoSiliguri/Agent_OS`](https://github.com/algoSiliguri/Agent_OS),
-   pinned at the `v1.0.0` tag.
+   pinned at the `v1.1.0` tag.
 
 You can install one or both. Brain works without agent-os; agent-os works
 without brain (it'll queue captures to a local `pending-captures.yaml`
@@ -21,7 +21,7 @@ The harness is the program you actually type into:
   agent-os CCP** — it's a Pi extension. Pi calls Claude (the LLM) under the
   hood via the Anthropic API.
 - **Claude Code** — Anthropic's official CLI. Can talk to brain via MCP, but
-  cannot run agent-os v1 (no Claude Code adapter shipped yet).
+  cannot run agent-os v1.1 (no Claude Code adapter shipped yet).
 
 If you want CCP slash commands, you need Pi. If you only want brain
 tool-use inside chat, either harness works.
@@ -87,38 +87,34 @@ npm install -g @mariozechner/pi-coding-agent
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### 2b. Install agent-os v1.0.0 as a Pi extension
+### 2b. Install agent-os v1.1.0 as a Pi extension
 
 ```bash
-pi install git:github.com/algoSiliguri/Agent_OS@v1.0.0
+pi install git:github.com/algoSiliguri/Agent_OS@v1.1.0
 ```
 
-The `@v1.0.0` suffix pins to that exact tag. Future bug-fix releases will
-ship as new tags (`v1.0.1`, `v1.1.0`, …); bump the suffix when you want
-those.
+The `@v1.1.0` suffix pins to that exact tag. Future bug-fix releases will
+ship as new tags; bump the suffix when you want those.
 
-### 2c. Bind your project
+### 2c. Initialize your project
 
-agent-os requires four governance files at your repo root. Three come from
-the agent-os repo at the matching tag; the fourth is your bind config.
+In Pi, run `/init` to fetch governance files from the v1.1.0 tag, render
+`.agent-os/project.yaml`, and install the brain CLI if needed:
 
-Fetch the governance files **as raw bytes** — do not let any tool reformat
-them or the constitution's `content-hash` will mismatch and `/doctor`
-hard-fails:
-
-```bash
-TAG="v1.0.0"
-RAW="https://raw.githubusercontent.com/algoSiliguri/Agent_OS/$TAG"
-
-mkdir -p .agent-os/schemas .agent-os/contracts .agent-os/runtime
-curl -sfLo AGENT_OS_CONSTITUTION.md                            "$RAW/AGENT_OS_CONSTITUTION.md"
-curl -sfLo .agent-os/schemas/constitution-binding.schema.json  "$RAW/.agent-os/schemas/constitution-binding.schema.json"
-curl -sfLo .agent-os/schemas/telemetry-event.schema.json       "$RAW/.agent-os/schemas/telemetry-event.schema.json"
-curl -sfLo .agent-os/schemas/permission-manifest.schema.json   "$RAW/.agent-os/schemas/permission-manifest.schema.json"
-curl -sfLo .agent-os/contracts/index.json                       "$RAW/.agent-os/contracts/index.json"
+```
+> /init <project-id> --domain <domain> [--critical-actions a,b]
 ```
 
-Then write your bind config at `.agent-os/project.yaml`:
+For example:
+```
+> /init my-project --domain trading-research --critical-actions trade_execute
+```
+
+`/init` handles fetching governance files as raw bytes so content-hashes
+stay valid. See the [Agent OS README](https://github.com/algoSiliguri/Agent_OS#initialize-a-project)
+for the full flag reference.
+
+The rendered `.agent-os/project.yaml` looks like:
 
 ```yaml
 project_id: my-project
@@ -136,9 +132,8 @@ trust_registry:
       trust: trusted
 ```
 
-The `workspace.root` should be the absolute path of your repo. Use a
-template + render step (similar to this playground's `bootstrap-ccp`) if
-you want the path to track per-checkout.
+The `workspace.root` should be the absolute path of your repo. Run `/init` to
+render `project.yaml` with the correct per-checkout absolute path.
 
 ### 2d. Tell agent-os where the brain DB lives
 
@@ -223,21 +218,16 @@ data_store/*.db-wal
 What to commit:
 
 - `data_store/knowledge.jsonl` (brain content, collaboratively shared)
-- `.agent-os/project.yaml.template` (with placeholders for absolute paths)
-- A bootstrap script that renders the template and fetches governance
-  files (this playground's `scripts/bootstrap-ccp.{sh,ps1}` is one
-  pattern)
 
 ## Upgrading agent-os
 
-Bump the tag everywhere it appears (bootstrap script, fetch URLs, `pi
-install` command), then re-run the bootstrap.
+Uninstall the old extension, install the new tag, then re-run `/init` to
+refresh the vendored governance files.
 
 ```bash
-# Example moving v1.0.0 → v1.1.0
 pi uninstall @agnivadc/agent-os
 pi install git:github.com/algoSiliguri/Agent_OS@v1.1.0
-# then re-fetch AGENT_OS_CONSTITUTION.md + schemas + contracts at v1.1.0
+# then in Pi: /init <project-id> --domain <domain> ...
 ```
 
 If the constitution version changed (e.g. `v2 → v3`), `/doctor` hard-fails
@@ -258,11 +248,11 @@ that version's migration guide.
   `Get-Command brain` (PowerShell), and `echo $BRAIN_DB_PATH`.
 - **Pi can't find the extension** — `pi list` should show the
   agent-os extension. If not, re-run
-  `pi install git:github.com/algoSiliguri/Agent_OS@v1.0.0`.
+  `pi install git:github.com/algoSiliguri/Agent_OS@v1.1.0`.
 
 ## References
 
-- [agent-os Section-16 walkthrough](https://github.com/algoSiliguri/Agent_OS/blob/v1.0.0/docs/demo/section-16-walkthrough.md)
-- [agent-os CONTEXT.md](https://github.com/algoSiliguri/Agent_OS/blob/v1.0.0/CONTEXT.md) (domain glossary)
+- [agent-os Section-16 walkthrough](https://github.com/algoSiliguri/Agent_OS/blob/v1.1.0/docs/demo/section-16-walkthrough.md)
+- [agent-os CONTEXT.md](https://github.com/algoSiliguri/Agent_OS/blob/v1.1.0/CONTEXT.md) (domain glossary)
 - [knowledge-brain README](https://github.com/agnivadc/knowledge-brain)
 - [Pi coding agent](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent)
