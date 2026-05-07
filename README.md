@@ -1,3 +1,6 @@
+> **This is an integration lab, not a starter template.**
+> For first-time setup: [agnivadc/agent-os-starter](https://github.com/agnivadc/agent-os-starter)
+
 # brain_playground
 
 A reference project that shows how Agent OS works in practice.
